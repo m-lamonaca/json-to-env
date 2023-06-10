@@ -110,11 +110,12 @@ impl EnvVar {
 
 impl Display for EnvVar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let key = self.name.clone();
         match self.value.clone() {
-            Value::Null => write!(f, "{key}=null", key = self.name),
-            Value::Bool(bool) => write!(f, "{key}={bool}", key = self.name),
-            Value::Number(number) => write!(f, "{key}={number}", key = self.name),
-            Value::String(string) => write!(f, "{key}=\"{string}\"", key = self.name),
+            Value::Null => write!(f, "{key}=null"),
+            Value::Bool(bool) => write!(f, "{key}={bool}",),
+            Value::Number(number) => write!(f, "{key}={number}"),
+            Value::String(string) => write!(f, r#"{key}="{}""#, string.replace('"', r#"\""#)),
             _ => Err(std::fmt::Error),
         }
     }
