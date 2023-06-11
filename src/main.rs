@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use clap::{Parser};
+use clap::Parser;
 use serde_json::Value;
 
 fn main() -> Result<()> {
@@ -116,7 +116,104 @@ impl Display for EnvVar {
             Value::Bool(bool) => write!(f, "{key}={bool}",),
             Value::Number(number) => write!(f, "{key}={number}"),
             Value::String(string) => write!(f, r#"{key}="{}""#, string.replace('"', r#"\""#)),
-            _ => Err(std::fmt::Error),
+            _ => write!(f, ""),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use crate::{EnvVar, JsonParser};
+
+    const KEY: &str = r#""key""#;
+
+    #[test]
+    fn build_key_should_leave_key_unchanged_when_prefix_is_empty() {
+        // ARRANGE
+        let separator = "";
+        let input = KEY.to_owned();
+        let expected = KEY;
+
+        // ACT
+        let result = JsonParser::build_key("", input, separator);
+
+        // ASSERT
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn build_key_should_leave_prepend_prefix_with_separator() {
+        // ARRANGE
+        let separator = "_";
+        let input = KEY.to_owned();
+        let expected = format!("prefix{separator}{KEY}");
+
+        // ACT
+        let actual = JsonParser::build_key("prefix", input, separator);
+
+        // ASSERT
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn bool_env_var_should_be_formatted_correctly() {
+        // ARRANGE
+        let input = EnvVar::new(KEY.to_owned(), json!(true));
+
+        // ACT
+        let result = input.to_string();
+
+        // ASSERT
+        assert_eq!(result, r#""key"=true"#)
+    }
+
+    #[test]
+    fn numeric_env_var_should_be_formatted_correctly() {
+        // ARRANGE
+        let input = EnvVar::new(KEY.to_owned(), json!(1.0));
+
+        // ACT
+        let result = input.to_string();
+
+        // ASSERT
+        assert_eq!(result, r#""key"=1.0"#)
+    }
+
+    #[test]
+    fn string_env_var_should_be_formatted_correctly() {
+        // ARRANGE
+        let input = EnvVar::new(KEY.to_owned(), json!("hello"));
+
+        // ACT
+        let result = input.to_string();
+
+        // ASSERT
+        assert_eq!(result, r#""key"="hello""#)
+    }
+
+    #[test]
+    fn array_env_var_should_be_formatted_correctly() {
+        // ARRANGE
+        let input = EnvVar::new(KEY.to_owned(), json!([1, 2]));
+
+        // ACT
+        let result = input.to_string();
+
+        // ASSERT
+        assert_eq!(result, "")
+    }
+
+    #[test]
+    fn object_env_var_should_be_formatted_correctly() {
+        // ARRANGE
+        let input = EnvVar::new(KEY.to_owned(), json!({ "key": "value" }));
+
+        // ACT
+        let result = input.to_string();
+
+        // ASSERT
+        assert_eq!(result, "")
     }
 }
