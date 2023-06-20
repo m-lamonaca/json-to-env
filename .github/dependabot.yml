@@ -7,3 +7,7 @@ updates:
     commit-message:
       prefix: "Cargo"
       include: "scope"
+    ignore:
+      # ignore patch updates
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
