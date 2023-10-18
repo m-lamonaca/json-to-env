@@ -1,6 +1,6 @@
 version: 2
 updates:
-  - package-ecosystem: "cargo" # See documentation for possible values
+  - package-ecosystem: "cargo"
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
@@ -8,6 +8,15 @@ updates:
       prefix: "Cargo"
       include: "scope"
     ignore:
-      # ignore patch updates
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "Github Actions"
+      include: "scope"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-minor"]
