@@ -33,7 +33,7 @@ fn main() -> Result<()> {
 
     let mut vars: Vec<EnvVar> = vec![];
     let separator = args.separator.unwrap_or("__".to_string());
-    JsonParser::parse(&mut vars, "", json, &separator);
+    JsonParser::parse(&mut vars, "", &json, &separator);
 
     let environ = vars
         .iter()
@@ -78,27 +78,27 @@ struct Args {
 struct JsonParser;
 
 impl JsonParser {
-    fn parse(lines: &mut Vec<EnvVar>, key: &str, value: Value, separator: &str) {
+    fn parse(lines: &mut Vec<EnvVar>, key: &str, value: &Value, separator: &str) {
         match value {
             Value::Array(array) => {
-                for (index, item) in array.into_iter().enumerate() {
-                    let key = Self::build_key(key, index.to_string(), separator);
-                    Self::parse(lines, key.as_str(), item, separator)
+                for (index, item) in array.iter().enumerate() {
+                    let key = Self::build_key(key, index.to_string().as_str(), separator);
+                    Self::parse(lines, &key, item, separator)
                 }
             }
             Value::Object(object) => {
                 for (name, value) in object {
-                    let key = Self::build_key(key, name, separator);
-                    Self::parse(lines, key.as_str(), value, separator)
+                    let key = Self::build_key(key, name.as_str(), separator);
+                    Self::parse(lines, &key, value, separator)
                 }
             }
-            _ => lines.push(EnvVar::new(key.trim().to_owned(), value)),
+            _ => lines.push(EnvVar::new(key.trim().to_owned(), value.clone())),
         }
     }
 
-    fn build_key(prefix: &str, key: String, separator: &str) -> String {
+    fn build_key(prefix: &str, key: &str, separator: &str) -> String {
         match prefix.is_empty() {
-            true => key,
+            true => key.to_string(),
             false => format!("{prefix}{separator}{key}"),
         }
     }
@@ -149,7 +149,7 @@ mod tests {
         let expected = KEY;
 
         // ACT
-        let result = JsonParser::build_key("", input, separator);
+        let result = JsonParser::build_key("", &input, separator);
 
         // ASSERT
         assert_eq!(result, expected);
@@ -163,7 +163,7 @@ mod tests {
         let expected = format!("prefix{separator}{KEY}");
 
         // ACT
-        let actual = JsonParser::build_key("prefix", input, separator);
+        let actual = JsonParser::build_key("prefix", &input, separator);
 
         // ASSERT
         assert_eq!(actual, expected);
