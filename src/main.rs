@@ -32,8 +32,7 @@ fn main() -> Result<()> {
         .with_context(|| format!("`{input}` does not contain valid JSON"))?;
 
     let mut vars: Vec<EnvVar> = vec![];
-    let separator = args.separator.unwrap_or("__".to_string());
-    JsonParser::parse(&mut vars, "", &json, &separator);
+    JsonParser::parse(&mut vars, "", &json, &args.separator);
 
     let environ = vars
         .iter()
@@ -70,9 +69,9 @@ struct Args {
     #[arg(short, long, value_name = "FILE")]
     output: Option<String>,
 
-    /// Separator for nested keys, defaults to double underscore (__)
-    #[arg(short, long, value_name = "STRING")]
-    separator: Option<String>,
+    /// Separator for nested keys
+    #[arg(short, long, value_name = "STRING", default_value = "__")]
+    separator: String,
 }
 
 struct JsonParser;
