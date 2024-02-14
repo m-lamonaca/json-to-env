@@ -1,7 +1,7 @@
 use std::{
     fmt::Display,
     fs::File,
-    io::{Read, Write},
+    io::{BufRead, BufReader, BufWriter, Read, Write},
 };
 
 use anyhow::{Context, Result};
@@ -11,11 +11,14 @@ use serde_json::Value;
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let mut reader: Box<dyn Read> = match args.input {
-        Some(ref filename) => Box::new(
-            File::open(filename).with_context(|| format!("Could not open file `{filename}`"))?,
-        ),
-        None => Box::new(std::io::stdin()),
+    let mut reader: Box<dyn BufRead> = match args.input {
+        None => Box::new(std::io::stdin().lock()),
+        Some(ref filename) => {
+            let file = File::open(filename)
+                .with_context(|| format!("Could not open file `{filename}`"))?;
+
+            Box::new(BufReader::new(file))
+        }
     };
 
     let mut buffer = String::new();
@@ -38,9 +41,12 @@ fn main() -> Result<()> {
         .join("\n");
 
     let mut writer: Box<dyn Write> = match args.output {
-        Some(ref filename) => Box::new(
-            File::create(filename).with_context(|| format!("Could not open file `{filename}`"))?,
-        ),
+        Some(ref filename) => {
+            let file = File::create(filename)
+                .with_context(|| format!("Could not open file `{filename}`"))?;
+
+            Box::new(BufWriter::new(file))
+        }
         None => Box::new(std::io::stdout()),
     };
 
