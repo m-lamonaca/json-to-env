@@ -22,13 +22,14 @@ fn main() -> Result<()> {
     };
 
     let mut buffer = String::new();
-    let filename = args.input.unwrap_or("STDIN".to_string());
+
+    let input = args.input.unwrap_or("STDIN".to_string());
     reader
         .read_to_string(&mut buffer)
-        .with_context(|| format!("Could not read `{filename}`"))?;
+        .with_context(|| format!("Could not read `{input}`"))?;
 
     let json: Value = serde_json::from_str(&buffer)
-        .with_context(|| format!("`{filename}` does not contain valid JSON"))?;
+        .with_context(|| format!("`{input}` does not contain valid JSON"))?;
 
     let mut vars: Vec<EnvVar> = vec![];
     let separator = args.separator.unwrap_or("__".to_string());
@@ -36,7 +37,7 @@ fn main() -> Result<()> {
 
     let environ = vars
         .iter()
-        .map(|v| v.to_string())
+        .map(ToString::to_string)
         .collect::<Vec<String>>()
         .join("\n");
 
@@ -50,9 +51,10 @@ fn main() -> Result<()> {
         None => Box::new(std::io::stdout()),
     };
 
+    let output = args.output.unwrap_or("STDOUT".to_string());
     writer
         .write_all(environ.as_bytes())
-        .with_context(|| "".to_string())?;
+        .with_context(|| format!("Could not write to `{output}`"))?;
 
     Ok(())
 }
