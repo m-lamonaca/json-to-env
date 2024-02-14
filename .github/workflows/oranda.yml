@@ -47,6 +47,8 @@ on:
     types:
       - completed
 
+  workflow_dispatch:
+
 # Alright, let's do it!
 jobs:
   oranda:
