@@ -91,7 +91,7 @@ impl JsonParser {
                     Self::parse(lines, &key, value, separator)
                 }
             }
-            _ => lines.push(EnvVar::new(key.trim().to_owned(), value.clone())),
+            _ => lines.push(EnvVar(key.trim().to_owned(), value.clone())),
         }
     }
 
@@ -103,28 +103,19 @@ impl JsonParser {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct EnvVar {
-    name: String,
-    value: Value,
-}
+struct EnvVar(String, Value);
 
-impl EnvVar {
-    fn new(name: String, value: Value) -> Self {
-        Self { name, value }
-    }
-}
 
 impl Display for EnvVar {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.value {
-            Value::Null => write!(fmt, "{key}=null", key = self.name),
-            Value::Bool(bool) => write!(fmt, "{key}={bool}", key = self.name),
-            Value::Number(ref number) => write!(fmt, "{key}={number}", key = self.name),
+        match self.1 {
+            Value::Null => write!(fmt, "{key}=null", key = self.0),
+            Value::Bool(bool) => write!(fmt, "{key}={bool}", key = self.0),
+            Value::Number(ref number) => write!(fmt, "{key}={number}", key = self.0),
             Value::String(ref string) => write!(
                 fmt,
                 r#"{key}="{value}""#,
-                key = self.name,
+                key = self.0,
                 value = string.replace('"', r#"\""#)
             ),
             _ => write!(fmt, ""),
@@ -171,7 +162,7 @@ mod tests {
     #[test]
     fn bool_env_var_should_be_formatted_correctly() {
         // ARRANGE
-        let input = EnvVar::new(KEY.to_owned(), json!(true));
+        let input = EnvVar(KEY.to_owned(), json!(true));
 
         // ACT
         let result = input.to_string();
@@ -183,7 +174,7 @@ mod tests {
     #[test]
     fn numeric_env_var_should_be_formatted_correctly() {
         // ARRANGE
-        let input = EnvVar::new(KEY.to_owned(), json!(1.0));
+        let input = EnvVar(KEY.to_owned(), json!(1.0));
 
         // ACT
         let result = input.to_string();
@@ -195,7 +186,7 @@ mod tests {
     #[test]
     fn string_env_var_should_be_formatted_correctly() {
         // ARRANGE
-        let input = EnvVar::new(KEY.to_owned(), json!("hello"));
+        let input = EnvVar(KEY.to_owned(), json!("hello"));
 
         // ACT
         let result = input.to_string();
@@ -207,7 +198,7 @@ mod tests {
     #[test]
     fn array_env_var_should_be_formatted_correctly() {
         // ARRANGE
-        let input = EnvVar::new(KEY.to_owned(), json!([1, 2]));
+        let input = EnvVar(KEY.to_owned(), json!([1, 2]));
 
         // ACT
         let result = input.to_string();
@@ -219,7 +210,7 @@ mod tests {
     #[test]
     fn object_env_var_should_be_formatted_correctly() {
         // ARRANGE
-        let input = EnvVar::new(KEY.to_owned(), json!({ "key": "value" }));
+        let input = EnvVar(KEY.to_owned(), json!({ "key": "value" }));
 
         // ACT
         let result = input.to_string();
