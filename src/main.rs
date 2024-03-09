@@ -41,13 +41,13 @@ fn main() -> Result<()> {
         .join("\n");
 
     let mut writer: Box<dyn Write> = match args.output {
+        None => Box::new(std::io::stdout().lock()),
         Some(ref filename) => {
             let file = File::create(filename)
                 .with_context(|| format!("Could not open file `{filename}`"))?;
 
             Box::new(BufWriter::new(file))
         }
-        None => Box::new(std::io::stdout()),
     };
 
     let output = args.output.unwrap_or("STDOUT".to_string());
@@ -104,7 +104,6 @@ impl JsonParser {
 }
 
 struct EnvVar(String, Value);
-
 
 impl Display for EnvVar {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
