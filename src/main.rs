@@ -1,21 +1,21 @@
 use std::{
+    error::Error,
     fmt::Display,
     fs::File,
     io::{BufRead, BufReader, BufWriter, Read, Write},
 };
 
-use anyhow::{Context, Result};
 use clap::Parser;
 use serde_json::Value;
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let mut reader: Box<dyn BufRead> = match args.input {
         None => Box::new(std::io::stdin().lock()),
         Some(ref filename) => {
             let file = File::open(filename)
-                .with_context(|| format!("Could not open file `{filename}`"))?;
+                .inspect_err(|_| eprintln!("Error: Could not open file `{filename}`"))?;
 
             Box::new(BufReader::new(file))
         }
@@ -26,10 +26,10 @@ fn main() -> Result<()> {
     let input = args.input.unwrap_or("STDIN".to_string());
     reader
         .read_to_string(&mut buffer)
-        .with_context(|| format!("Could not read `{input}`"))?;
+        .inspect_err(|_| eprintln!("Error: Could not read `{input}`"))?;
 
     let json: Value = serde_json::from_str(&buffer)
-        .with_context(|| format!("`{input}` does not contain valid JSON"))?;
+        .inspect_err(|_| eprintln!("Error: `{input}` does not contain valid JSON"))?;
 
     let mut vars: Vec<EnvVar> = vec![];
     JsonParser::parse(&mut vars, "", &json, &args.separator);
@@ -44,7 +44,7 @@ fn main() -> Result<()> {
         None => Box::new(std::io::stdout().lock()),
         Some(ref filename) => {
             let file = File::create(filename)
-                .with_context(|| format!("Could not open file `{filename}`"))?;
+                .inspect_err(|_| eprintln!("Error: Could not open file `{filename}`"))?;
 
             Box::new(BufWriter::new(file))
         }
@@ -53,7 +53,7 @@ fn main() -> Result<()> {
     let output = args.output.unwrap_or("STDOUT".to_string());
     writer
         .write_all(environ.as_bytes())
-        .with_context(|| format!("Could not write to `{output}`"))?;
+        .inspect_err(|_| eprintln!("Error: Could not write to `{output}`"))?;
 
     Ok(())
 }
