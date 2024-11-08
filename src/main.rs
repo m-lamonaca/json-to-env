@@ -31,8 +31,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let json: Value = serde_json::from_str(&buffer)
         .inspect_err(|_| eprintln!("Error: `{input}` does not contain valid JSON"))?;
 
+    let options = ParseOptions::new(
+        args.key_separator,
+        args.array_separator,
+        args.enumerate_array,
+    );
+
     let mut vars: Vec<EnvVar> = vec![];
-    JsonParser::parse(&mut vars, "", &json, &args.separator);
+    JsonParser::parse(&mut vars, "", &json, &options);
 
     let environ = vars
         .iter()
@@ -70,25 +76,62 @@ struct Args {
     output: Option<String>,
 
     /// Separator for nested keys
-    #[arg(short, long, value_name = "STRING", default_value = "__")]
-    separator: String,
+    #[arg(short = 's', long, value_name = "STRING", default_value = "__")]
+    key_separator: String,
+
+    /// Separator for array elements
+    #[arg(short = 'S', long, value_name = "STRING", default_value = ",")]
+    array_separator: String,
+
+    /// Separate array elements in multiple environment variables
+    #[arg(short, long)]
+    enumerate_array: bool,
+}
+
+#[derive(Debug)]
+struct ParseOptions {
+    key_separator: String,
+    array_separator: String,
+    enumerate_array: bool,
+}
+
+impl ParseOptions {
+    fn new(key_separator: String, array_separator: String, enumerate_array: bool) -> Self {
+        Self {
+            key_separator,
+            array_separator,
+            enumerate_array,
+        }
+    }
 }
 
 struct JsonParser;
 
 impl JsonParser {
-    fn parse(lines: &mut Vec<EnvVar>, key: &str, value: &Value, separator: &str) {
+    fn parse(lines: &mut Vec<EnvVar>, key: &str, value: &Value, options: &ParseOptions) {
         match value {
             Value::Array(array) => {
-                for (index, item) in array.iter().enumerate() {
-                    let key = Self::build_key(key, index.to_string().as_str(), separator);
-                    Self::parse(lines, &key, item, separator)
+                if options.enumerate_array {
+                    for (index, item) in array.iter().enumerate() {
+                        let key = Self::build_key(key, &index.to_string(), &options.key_separator);
+                        Self::parse(lines, &key, item, options)
+                    }
+                } else {
+                    let value = array
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(&options.array_separator);
+
+                    let item = serde_json::Value::String(value);
+
+                    Self::parse(lines, key, &item, options)
                 }
             }
             Value::Object(object) => {
                 for (name, value) in object {
-                    let key = Self::build_key(key, name.as_str(), separator);
-                    Self::parse(lines, &key, value, separator)
+                    let key = Self::build_key(key, name.as_str(), &options.key_separator);
+                    Self::parse(lines, &key, value, options)
                 }
             }
             _ => lines.push(EnvVar(key.trim().to_owned(), value.clone())),
