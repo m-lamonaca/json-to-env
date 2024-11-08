@@ -37,10 +37,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.enumerate_array,
     );
 
-    let mut vars: Vec<EnvVar> = vec![];
-    JsonParser::parse(&mut vars, "", &json, &options);
+    let mut parser = JsonParser::new(options);
+    let keys = parser.parse(&json);
 
-    let environ = vars
+    let environ = keys
         .iter()
         .map(ToString::to_string)
         .collect::<Vec<String>>()
@@ -88,7 +88,7 @@ struct Args {
     enumerate_array: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ParseOptions {
     key_separator: String,
     array_separator: String,
@@ -105,16 +105,32 @@ impl ParseOptions {
     }
 }
 
-struct JsonParser;
+#[derive(Debug, Clone)]
+struct JsonParser {
+    options: ParseOptions,
+    vars: Vec<EnvVar>,
+}
 
 impl JsonParser {
-    fn parse(lines: &mut Vec<EnvVar>, key: &str, value: &Value, options: &ParseOptions) {
+    fn new(options: ParseOptions) -> Self {
+        Self {
+            options,
+            vars: vec![],
+        }
+    }
+
+    fn parse(&mut self, json: &Value) -> &Vec<EnvVar> {
+        Self::parse_keys(&mut self.vars, "", json, &self.options);
+        &self.vars
+    }
+
+    fn parse_keys(lines: &mut Vec<EnvVar>, key: &str, value: &Value, options: &ParseOptions) {
         match value {
             Value::Array(array) => {
                 if options.enumerate_array {
                     for (index, item) in array.iter().enumerate() {
                         let key = Self::build_key(key, &index.to_string(), &options.key_separator);
-                        Self::parse(lines, &key, item, options)
+                        Self::parse_keys(lines, &key, item, options)
                     }
                 } else {
                     let value = array
@@ -125,13 +141,13 @@ impl JsonParser {
 
                     let item = serde_json::Value::String(value);
 
-                    Self::parse(lines, key, &item, options)
+                    Self::parse_keys(lines, key, &item, options)
                 }
             }
             Value::Object(object) => {
                 for (name, value) in object {
-                    let key = Self::build_key(key, name.as_str(), &options.key_separator);
-                    Self::parse(lines, &key, value, options)
+                    let key = Self::build_key(key, name, &options.key_separator);
+                    Self::parse_keys(lines, &key, value, options)
                 }
             }
             _ => lines.push(EnvVar(key.trim().to_owned(), value.clone())),
@@ -146,6 +162,7 @@ impl JsonParser {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct EnvVar(String, Value);
 
 impl Display for EnvVar {
