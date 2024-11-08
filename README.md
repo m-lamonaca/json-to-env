@@ -16,17 +16,3 @@ Options:
   -h, --help                Print help
   -V, --version             Print version
 ```
-
-## Installation
-
-You can either install the tool with `cargo`:
-
-```sh
-cargo install --path <path/to/repo>
-```
-
-or build the executable with (output in `target/release`):
-
-```sh
-cargo build --release
-```
