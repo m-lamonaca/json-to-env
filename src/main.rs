@@ -186,7 +186,7 @@ impl Display for EnvVar {
 mod tests {
     use serde_json::json;
 
-    use crate::{EnvVar, JsonParser};
+    use crate::{EnvVar, JsonParser, ParseOptions};
 
     const KEY: &str = r#""key""#;
 
@@ -276,5 +276,38 @@ mod tests {
 
         // ASSERT
         assert_eq!(result, "")
+    }
+
+    #[test]
+    fn parse_array_not_enumerated() {
+        let json = json!({ "array": [1, 2, 3] });
+        let options = ParseOptions::new("__".to_string(), ",".to_string(), false);
+        let mut parser = JsonParser::new(options);
+        let environ = parser.parse(&json);
+
+        assert_eq!(
+            *environ,
+            vec![EnvVar(
+                "array".to_string(),
+                serde_json::Value::String("1,2,3".to_string())
+            )]
+        )
+    }
+
+    #[test]
+    fn parse_array_enumerated() {
+        let json = json!({ "array": [1, 2, 3] });
+        let options = ParseOptions::new("__".to_string(), ",".to_string(), true);
+        let mut parser = JsonParser::new(options);
+        let environ = parser.parse(&json);
+
+        assert_eq!(
+            *environ,
+            vec![
+                EnvVar("array__0".to_string(), serde_json::Value::Number(1.into())),
+                EnvVar("array__1".to_string(), serde_json::Value::Number(2.into())),
+                EnvVar("array__2".to_string(), serde_json::Value::Number(3.into()))
+            ]
+        )
     }
 }
