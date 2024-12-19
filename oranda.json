@@ -1,5 +1,15 @@
 {
+  "$schema": "https://github.com/axodotdev/oranda/releases/latest/download/oranda-config-schema.json",
   "build": {
     "path_prefix": "json-to-env"
+  },
+  "styles": {
+    "theme": "hacker"
+  },
+  "components": {
+    "changelog": true,
+    "artifacts": {
+      "cargo_dist": true
+    }
   }
 }
