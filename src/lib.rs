@@ -22,49 +22,56 @@ impl ParseOptions {
 #[derive(Debug, Clone)]
 pub struct JsonParser {
     options: ParseOptions,
-    vars: Vec<EnvVar>,
 }
 
 impl JsonParser {
     pub fn new(options: ParseOptions) -> Self {
-        Self {
-            options,
-            vars: vec![],
-        }
+        Self { options }
     }
 
-    pub fn parse(&mut self, json: &Value) -> &Vec<EnvVar> {
-        Self::parse_keys(&mut self.vars, "", json, &self.options);
-        &self.vars
+    pub fn parse(&mut self, json: &Value) -> Vec<EnvVar> {
+        Self::parse_value("", json, &self.options)
     }
 
-    fn parse_keys(lines: &mut Vec<EnvVar>, key: &str, value: &Value, options: &ParseOptions) {
+    fn parse_value(key: &str, value: &Value, options: &ParseOptions) -> Vec<EnvVar> {
         match value {
             Value::Array(array) => {
-                if options.enumerate_array {
+                let has_complex_values = array
+                    .iter()
+                    .any(|value| value.is_object() || value.is_array());
+
+                // complex (nested) values cannot be part of an array enumeration, skip just this array
+                if options.enumerate_array || has_complex_values {
+                    let mut values = Vec::with_capacity(array.len());
+
                     for (index, item) in array.iter().enumerate() {
                         let key = Self::build_key(key, &index.to_string(), &options.key_separator);
-                        Self::parse_keys(lines, &key, item, options)
+                        values.push(Self::parse_value(&key, item, options));
                     }
+
+                    values.into_iter().flatten().collect()
                 } else {
                     let value = array
                         .iter()
-                        .map(ToString::to_string)
+                        .map(|value| value.to_string().replace(['\\', '"'], ""))
                         .collect::<Vec<_>>()
                         .join(&options.array_separator);
 
-                    let item = serde_json::Value::String(value);
-
-                    Self::parse_keys(lines, key, &item, options)
+                    let value = serde_json::Value::String(value);
+                    Self::parse_value(key, &value, options)
                 }
             }
             Value::Object(object) => {
-                for (name, value) in object {
+                let mut values = Vec::with_capacity(object.len());
+
+                for (name, value) in object.iter() {
                     let key = Self::build_key(key, name, &options.key_separator);
-                    Self::parse_keys(lines, &key, value, options)
+                    values.push(Self::parse_value(&key, value, options));
                 }
+
+                values.into_iter().flatten().collect()
             }
-            _ => lines.push(EnvVar(key.trim().to_owned(), value.clone())),
+            _ => vec![EnvVar(key.trim().to_owned(), value.clone())],
         }
     }
 
