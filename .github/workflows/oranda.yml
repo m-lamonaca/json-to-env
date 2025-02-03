@@ -79,7 +79,7 @@ jobs:
           cp public/index.html /tmp/public
 
       - name: Check HTML for broken internal links
-        uses: untitaker/hyperlink@0.1.43
+        uses: untitaker/hyperlink@0.1.44
         with:
           args: /tmp/public
       
