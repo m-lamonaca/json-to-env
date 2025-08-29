@@ -1,17 +1,15 @@
 [package]
 name = "json2env"
-version = "0.3.1"
-edition = "2021"
+version = "0.4.0"
+edition = "2024"
 authors = ["Marcello Lamonaca <marcello@lamonaca.eu>"]
 description = "JSON to Env Var converter"
 repository = "https://github.com/m-lamonaca/json-to-env"
 license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-clap = { version = "4.5.0", features = ["derive", "color"] }
-serde_json = "1.0.97"
+clap = { version = "4.5", features = ["derive", "color"] }
+serde_json = "1.0"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
