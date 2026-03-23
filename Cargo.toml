@@ -8,7 +8,7 @@ repository = "https://github.com/m-lamonaca/json-to-env"
 license = "MIT"
 
 [dependencies]
-clap = { version = "4.5", features = ["derive", "color"] }
+clap = { version = "4.6", features = ["derive", "color"] }
 serde_json = "1.0"
 
 # The profile that 'cargo dist' will build with
